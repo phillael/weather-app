@@ -1,8 +1,5 @@
 import { flow, Instance, SnapshotOut, types } from "mobx-state-tree";
-import { UserApi } from "../../api/weather";
-import { asyncApi, withEnvironment } from "../extensions";
-import { UserModel, UserSnapshotIn } from "../user/user";
-import { mergeSnapshot } from "../utils";
+import { WeatherApi } from "../../api/weather";
 
 /**
  * A store containing all known users, keyed by their id.
@@ -10,10 +7,9 @@ import { mergeSnapshot } from "../utils";
  */
 export const UserStoreModel = types
   .model("UserStore")
-  .extend(withEnvironment)
   .props({
     /** Map of all known users and data, keyed by user id */
-    users: types.map(UserModel),
+    users: types.map({}),
     /** All known missing user ids */
     missingUsers: types.optional(types.map(types.boolean), {}),
   })

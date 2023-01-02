@@ -1,42 +1,111 @@
 import Head from "next/head";
-import Image from "next/image";
 import Header from "../components/header";
-import { Inter } from "@next/font/google";
 import {
+  Text,
   Box,
   Button,
-  Center,
-  Container,
   FormControl,
-  FormHelperText,
-  FormLabel,
   Heading,
   HStack,
   Input,
+  Spinner,
   VStack,
+  Container,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { NextPage } from "next/types";
-
-const inter = Inter({ subsets: ["latin"] });
+import moment from "moment";
+import { setRevalidateHeaders } from "next/dist/server/send-payload";
+import Search from "../components/search";
+import { WEATHER_API_KEY, WEATHER_API_URL } from "../api/weather";
+import CurrentWeather from "../components/current-weather";
 
 const Home: NextPage = () => {
-  const [city, setCity] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(false);
-  const [weatherData, setWeatherdata] = useState(undefined);
+  const [cityName, setCityName] = useState("");
+  const [userLocation, setUserLocation] = useState("");
+  const [weatherData, setWeatherdata] = useState(null);
+  const [userLat, setUserLat] = useState(0);
+  const [userLon, setUserLon] = useState(0);
+  console.log("!@#", weatherData);
 
-  const getWeather = async (city: string) => {
+  const [currentWeather, setCurrentWeather] = useState(null);
+  const [forecast, setForecast] = useState(null);
+
+  const handleOnSearchChange = (searchData: any) => {
+    const [lat, lon] = searchData.value.split(" ");
+
+    const currentWeatherFetch = fetch(
+      `${WEATHER_API_URL}/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`
+    );
+    const forecastFetch = fetch(
+      `${WEATHER_API_URL}/forecast?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`
+    );
+
+    Promise.all([currentWeatherFetch, forecastFetch])
+      .then(async (response) => {
+        const weatherResponse = await response[0].json();
+        const forcastResponse = await response[1].json();
+
+        setCurrentWeather({ city: searchData.label, ...weatherResponse });
+        setForecast({ city: searchData.label, ...forcastResponse });
+      })
+      .catch((err) => console.log(err));
+  };
+
+  const handleOnSubmit = async (cityName: string, e?: FormEvent) => {
+    // Prevents isses submitting form in Firefox
+    e?.preventDefault();
+    setErr(false);
+    // Call the open weather API passing in inputValue and api key
     try {
+      setLoading(true);
       const response = await fetch(
-        `http://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}&units=imperial`
+        `http://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}&units=imperial`
       );
       const data = await response.json();
-      console.log("!@#", data);
       setWeatherdata(data);
+      setCityName(data.name);
     } catch (err) {
       console.log(err);
+      setErr(true);
+    } finally {
+      setLoading(false);
     }
   };
+
+  const getCityNameByCoords = useCallback(async () => {
+    // Gets weather data by coords provided by geolocation
+    try {
+      const response = await fetch(
+        `http://api.openweathermap.org/geo/1.0/reverse?lat=${userLat}&lon=${userLon}&limit=1&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}`
+      );
+      const data = await response.json();
+      const userCity = data[0].name;
+      handleOnSubmit(userCity);
+      setUserLocation(userCity);
+      setInputValue(userCity);
+      setLoading(false);
+    } catch (err) {
+      setErr(true);
+    } finally {
+    }
+  }, [userLat, userLon]);
+
+  console.log("!@# err", err);
+
+  // Get users location on mount
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      setUserLat(position.coords.latitude);
+      setUserLon(position.coords.longitude);
+    });
+    getCityNameByCoords();
+    userLocation && setLoading(false);
+  }, [userLocation, getCityNameByCoords]);
+
   return (
     <>
       <Head>
@@ -50,29 +119,19 @@ const Home: NextPage = () => {
       </Head>
       <main>
         <Header />
-        <Container maxW="2xl" centerContent p={10} borderRadius={10}>
-          <VStack spacing={10}>
-            <FormControl>
-              <HStack spacing={4}>
-                <Input
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  variant="flushed"
-                  type="text"
-                  placeholder="Search for a city!"
-                />
-                <Button onClick={() => getWeather(city)}>Search</Button>
-              </HStack>
-            </FormControl>
-            <Box minH={8}>
-              <Heading as="h2" fontSize="5xl">
-                {weatherData && weatherData.main.temp}
-              </Heading>
-            </Box>
-            <Box padding="4" maxW="md" borderRadius={10}>
-              Here is where you're weather data will go
-            </Box>
-          </VStack>
+        <Container
+          maxW="2xl"
+          centerContent
+          p={10}
+          borderRadius={10}
+          bg="pink"
+          textAlign="center"
+        >
+          <Search
+            onSearchChange={handleOnSearchChange}
+            onSubmit={handleOnSubmit}
+          />
+          {currentWeather && <CurrentWeather data={currentWeather} />}
         </Container>
       </main>
     </>
