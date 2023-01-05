@@ -23,7 +23,7 @@ const Home: NextPage = observer(() => {
 
   // Get users location on mount
   useEffect(() => {
-    setIsLoading();
+    setIsLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position: GeolocationPosition) => {
         fetchUserLocation(position);
