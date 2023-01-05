@@ -1,9 +1,9 @@
 import React from "react";
-import { Button, Flex, useColorMode } from "@chakra-ui/react";
+import { Button, useColorMode } from "@chakra-ui/react";
 import { MoonIcon } from "@chakra-ui/icons";
 
 const DarkModeButton = () => {
-  const { colorMode, toggleColorMode } = useColorMode();
+  const { toggleColorMode } = useColorMode();
 
   return (
     <Button

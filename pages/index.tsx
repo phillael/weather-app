@@ -1,6 +1,6 @@
 import Head from "next/head";
 import Header from "../components/header";
-import { Container, Spinner } from "@chakra-ui/react";
+import { Container, Spinner, Text, VStack } from "@chakra-ui/react";
 import { useEffect } from "react";
 import { NextPage } from "next/types";
 import Search from "../components/search";
@@ -18,16 +18,18 @@ const Home: NextPage = observer(() => {
     isLoading,
     fetchWeather,
     fetchUserLocation,
+    setIsLoading,
   } = weatherStore;
 
   // Get users location on mount
   useEffect(() => {
+    setIsLoading();
     navigator.geolocation.getCurrentPosition(
       (position: GeolocationPosition) => {
         fetchUserLocation(position);
       }
     );
-  }, []);
+  }, [fetchUserLocation, setIsLoading]);
 
   return (
     <>
@@ -45,24 +47,28 @@ const Home: NextPage = observer(() => {
         <Container
           maxW="2xl"
           centerContent
-          p={10}
+          p={8}
           borderRadius={10}
           textAlign="center"
           minH="500px"
         >
           <Search onSearchChange={fetchWeather} />
           {isLoading ? (
-            <Spinner
-              thickness="4px"
-              speed="0.65s"
-              emptyColor="gray.200"
-              color="blue.500"
-              size="xl"
-            />
+            <VStack pt={8} spacing={8}>
+              <Text>Searching for your city ...</Text>
+              <Spinner
+                thickness="4px"
+                speed="0.65s"
+                emptyColor="gray.200"
+                color="blue.500"
+                size="xl"
+                p={8}
+              />
+            </VStack>
           ) : (
             <>
               {currentWeather && <CurrentWeather data={currentWeather} />}
-              {/* {forecast && <Forecast forecast={forecast} />} */}
+              {forecast && <Forecast data={forecast} />}
             </>
           )}
         </Container>

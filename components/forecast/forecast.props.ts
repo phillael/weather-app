@@ -1,5 +1,5 @@
-import { WeatherResponse } from "../../models/weather-store/weather-store.types";
+import { WeatherForecast } from "../../models/weather-store/weather-store.types";
 
 export interface ForecastProps {
-  forecast: WeatherResponse[];
+  data: WeatherForecast;
 }

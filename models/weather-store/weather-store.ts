@@ -1,7 +1,10 @@
-import { action } from "mobx";
 import { flow, types } from "mobx-state-tree";
 import { WEATHER_API_KEY, WEATHER_API_URL } from "../../api/weather";
-import { CurrentWeather, Forecast, UserLocation } from "./weather-store.types";
+import {
+  WeatherForecast,
+  UserLocation,
+  WeatherResponse,
+} from "./weather-store.types";
 
 export const WeatherStore = types
   .model("Weather")
@@ -9,34 +12,26 @@ export const WeatherStore = types
     /** User's current location */
     userLocation: types.maybe(types.frozen<UserLocation>()),
     /** currentWeather in given location */
-    currentWeather: types.maybe(types.frozen<CurrentWeather>()),
+    currentWeather: types.maybe(types.frozen<WeatherResponse>()),
     /** Forcast weather in given location */
-    forecast: types.maybe(types.frozen<Forecast>()),
+    forecast: types.maybe(types.frozen<WeatherForecast>()),
     /** Loading state */
     isLoading: types.maybe(types.boolean),
     /** User's saved location */
     savedLocation: types.maybe(types.string),
   })
   .actions((self) => ({
-    setCurrentWeather: (currentWeather: CurrentWeather) => {
+    setCurrentWeather: (currentWeather: WeatherResponse) => {
       self.currentWeather = currentWeather;
     },
-    setForecast: (forecast: Forecast) => {
+    setForecast: (forecast: WeatherForecast) => {
       self.forecast = forecast;
     },
     setUserLocation: (userLocation: UserLocation) => {
       self.userLocation = userLocation;
     },
-  }))
-  .actions((self) => ({
-    setCurrentWeather: (currentWeather: CurrentWeather) => {
-      self.currentWeather = currentWeather;
-    },
-    setForecast: (forecast: Forecast) => {
-      self.forecast = forecast;
-    },
-    setUserLocation: (userLocation: UserLocation) => {
-      self.userLocation = userLocation;
+    setIsLoading: () => {
+      self.isLoading = true;
     },
   }))
   .actions((self) => ({
@@ -54,12 +49,10 @@ export const WeatherStore = types
         );
         Promise.all([currentWeatherFetch, forecastFetch]).then(
           async (response) => {
-            const weatherResponse = await response[0].json();
+            const weatherResponse: WeatherResponse = await response[0].json();
             const forcastResponse = await response[1].json();
             self.setCurrentWeather(weatherResponse);
             self.setForecast(forcastResponse);
-            // console.log("!@# weatherResponse", weatherResponse);
-            // console.log("!@# forecastResponse", forcastResponse);
           }
         );
       } catch (err) {

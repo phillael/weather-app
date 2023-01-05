@@ -1,17 +1,19 @@
 import { FormControl } from "@chakra-ui/react";
-import React, { FC, useEffect, useState } from "react";
+import React, { FC, useState } from "react";
 import { AsyncPaginate } from "react-select-async-paginate";
 import { geoApiOptions, GEO_API_URL } from "../../api/weather/weather-api";
 import { SearchProps } from "./search.props";
 import { observer } from "mobx-react-lite";
 
-const inputStyle = {
-  width: "80%",
-  "text-align": "center",
-};
-
 const Search: FC<SearchProps> = observer(({ onSearchChange }) => {
   const [search, setSearch] = useState(null);
+
+  const formStyle = {
+    width: "80%",
+    "text-align": "center",
+    color: "black",
+    marginBottom: "20px",
+  };
 
   const loadOptions = (inputValue: string) => {
     return fetch(
@@ -36,17 +38,18 @@ const Search: FC<SearchProps> = observer(({ onSearchChange }) => {
     onSearchChange(searchData);
   };
 
-  // Set initial search to user's location
-  //   useEffect(() => {
-  //     //   setSearch(userLocation);
-  //     loadOptions(userLocation);
-  //   }, [userLocation]);
-
   return (
-    <form style={inputStyle}>
+    <form style={formStyle}>
       <FormControl>
         <AsyncPaginate
-          placeholder="Search for city"
+          styles={{
+            control: (baseStyles, state) => ({
+              ...baseStyles,
+              borderRadius: "12px",
+              padding: "4px",
+            }),
+          }}
+          placeholder="Search for a city!"
           debounceTimeout={600}
           value={search}
           onChange={handleOnChange}

@@ -1,20 +1,30 @@
 export interface WeatherResponse {
+  name: string;
+  sys: {
+    country: string;
+  };
   main: {
-    temp: number;
+    temp: string;
+    temp_max: string;
+    temp_min: string;
   };
-  weather: {
-    description: string;
-  };
+  weather: Weather[];
 }
 
-export interface CurrentWeather {
-  city: string;
-  weatherResponse: WeatherResponse;
+export interface Weather {
+  description: string;
+  icon: string;
 }
-
-export interface Forecast {
-  city: string;
-  forecast: WeatherResponse[];
+export interface ForecastListItem {
+  main: {
+    temp: string;
+    temp_max: string;
+    temp_min: string;
+  };
+  weather: Weather[];
+}
+export interface WeatherForecast {
+  list: ForecastListItem[];
 }
 
 export interface UserLocation {
