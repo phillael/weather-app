@@ -19,6 +19,8 @@ export const WeatherStore = types
     isLoading: types.maybe(types.boolean),
     /** User's saved location */
     savedLocation: types.maybe(types.string),
+    /** State for dealing with errors */
+    error: types.maybe(types.boolean),
   })
   .actions((self) => ({
     setCurrentWeather: (currentWeather: WeatherResponse) => {
@@ -30,62 +32,62 @@ export const WeatherStore = types
     setUserLocation: (userLocation: UserLocation) => {
       self.userLocation = userLocation;
     },
-    setIsLoading: () => {
-      self.isLoading = true;
+    setIsLoading: (loading: boolean) => {
+      self.isLoading = loading;
+    },
+    setError(err: boolean) {
+      self.error = err;
     },
   }))
   .actions((self) => ({
-    fetchWeather: flow(function* (searchData) {
-      // get latitude and longitude of search location
-      self.isLoading = true;
+    fetchWeather: function (searchData: any) {
+      // assign a type for search data
       const [lat, lon] = searchData.value.split(" ");
-
-      try {
-        const currentWeatherFetch = yield fetch(
+      self.isLoading = true;
+      return Promise.all([
+        fetch(
           `${WEATHER_API_URL}/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=imperial`
-        );
-        const forecastFetch = yield fetch(
+        )
+          .then((res) => res.json())
+          .then((data) => self.setCurrentWeather(data)),
+        fetch(
           `${WEATHER_API_URL}/forecast?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=imperial`
-        );
-        Promise.all([currentWeatherFetch, forecastFetch]).then(
-          async (response) => {
-            const weatherResponse: WeatherResponse = await response[0].json();
-            const forcastResponse = await response[1].json();
-            self.setCurrentWeather(weatherResponse);
-            self.setForecast(forcastResponse);
-          }
-        );
-      } catch (err) {
-        console.log("!@#", err);
-      } finally {
-        self.isLoading = false;
-      }
-    }),
+        )
+          .then((res) => res.json())
+          .then((data) => self.setForecast(data)),
+      ])
+        .catch((err) => {
+          console.log(err);
+          self.setError(true);
+        })
+        .finally(() => {
+          self.setIsLoading(false);
+        });
+    },
   }))
   .actions((self) => ({
-    fetchUserLocation: flow(function* (position: GeolocationPosition) {
+    fetchUserLocation: function (position: GeolocationPosition) {
       // Use Geolocation API to get user's location
       self.isLoading = true;
-      try {
-        const fetchLocation = yield fetch(
-          `https://api.openweathermap.org/geo/1.0/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&limit=1&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}`
-        );
-        Promise.all([fetchLocation]).then(async (response) => {
-          const userLocationResponse = await response[0].json();
 
-          // Get/format data needed to pass into fetchWeather
-          const { country, name, lat, lon } = userLocationResponse[0];
-          self.setUserLocation({
-            value: `${lat} ${lon}`,
-            label: `${name}, ${country}`,
-          });
-        });
-        if (self.userLocation) {
-          console.log("!@# fetching weather at user's location");
-          self.fetchWeather(self.userLocation);
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    }),
+      return Promise.all([
+        fetch(
+          `https://api.openweathermap.org/geo/1.0/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&limit=1&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}`
+        )
+          .then((res) => res.json())
+          .then((data) =>
+            self.setUserLocation({
+              value: `${data[0].lat} ${data[0].lon}`,
+              label: `${data[0].name}, ${data[0].country}`,
+            })
+          )
+          .catch((err) => {
+            console.log(err);
+            self.setError(true);
+          })
+          .finally(() => {
+            self.fetchWeather(self.userLocation);
+          }),
+      ]);
+    },
   }));
