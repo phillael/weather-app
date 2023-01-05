@@ -1,14 +1,6 @@
 import { FC } from "react";
 import { ForecastProps } from "./forecast.props";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionItemHeading,
-  AccordionItemButton,
-  AccordionItemPanel,
-} from "react-accessible-accordion";
 import { Forecast } from "../../models/weather-store/weather-store.types";
-import "./forecast.css";
 
 const WEEK_DAYS = [
   "Monday",
