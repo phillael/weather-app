@@ -8,6 +8,7 @@ import CurrentWeather from "../components/current-weather";
 import { observer } from "mobx-react-lite";
 import { WeatherStore } from "../models/weather-store";
 import { useStore } from "mobx-store-provider";
+import Forecast from "../components/forecast";
 
 const Home: NextPage = observer(() => {
   const weatherStore = useStore(WeatherStore);
@@ -59,7 +60,10 @@ const Home: NextPage = observer(() => {
               size="xl"
             />
           ) : (
-            currentWeather && <CurrentWeather data={currentWeather} />
+            <>
+              {currentWeather && <CurrentWeather data={currentWeather} />}
+              {/* {forecast && <Forecast forecast={forecast} />} */}
+            </>
           )}
         </Container>
       </main>
