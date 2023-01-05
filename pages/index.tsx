@@ -1,110 +1,32 @@
 import Head from "next/head";
 import Header from "../components/header";
-import {
-  Text,
-  Box,
-  Button,
-  FormControl,
-  Heading,
-  HStack,
-  Input,
-  Spinner,
-  VStack,
-  Container,
-} from "@chakra-ui/react";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { Container, Spinner } from "@chakra-ui/react";
+import { useEffect } from "react";
 import { NextPage } from "next/types";
-import moment from "moment";
-import { setRevalidateHeaders } from "next/dist/server/send-payload";
 import Search from "../components/search";
-import { WEATHER_API_KEY, WEATHER_API_URL } from "../api/weather";
 import CurrentWeather from "../components/current-weather";
+import { observer } from "mobx-react-lite";
+import { WeatherStore } from "../models/weather-store";
+import { useStore } from "mobx-store-provider";
 
-const Home: NextPage = () => {
-  const [inputValue, setInputValue] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState(false);
-  const [cityName, setCityName] = useState("");
-  const [userLocation, setUserLocation] = useState("");
-  const [weatherData, setWeatherdata] = useState(null);
-  const [userLat, setUserLat] = useState(0);
-  const [userLon, setUserLon] = useState(0);
-  console.log("!@#", weatherData);
-
-  const [currentWeather, setCurrentWeather] = useState(null);
-  const [forecast, setForecast] = useState(null);
-
-  const handleOnSearchChange = (searchData: any) => {
-    const [lat, lon] = searchData.value.split(" ");
-
-    const currentWeatherFetch = fetch(
-      `${WEATHER_API_URL}/weather?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`
-    );
-    const forecastFetch = fetch(
-      `${WEATHER_API_URL}/forecast?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric`
-    );
-
-    Promise.all([currentWeatherFetch, forecastFetch])
-      .then(async (response) => {
-        const weatherResponse = await response[0].json();
-        const forcastResponse = await response[1].json();
-
-        setCurrentWeather({ city: searchData.label, ...weatherResponse });
-        setForecast({ city: searchData.label, ...forcastResponse });
-      })
-      .catch((err) => console.log(err));
-  };
-
-  const handleOnSubmit = async (cityName: string, e?: FormEvent) => {
-    // Prevents isses submitting form in Firefox
-    e?.preventDefault();
-    setErr(false);
-    // Call the open weather API passing in inputValue and api key
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `http://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}&units=imperial`
-      );
-      const data = await response.json();
-      setWeatherdata(data);
-      setCityName(data.name);
-    } catch (err) {
-      console.log(err);
-      setErr(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getCityNameByCoords = useCallback(async () => {
-    // Gets weather data by coords provided by geolocation
-    try {
-      const response = await fetch(
-        `http://api.openweathermap.org/geo/1.0/reverse?lat=${userLat}&lon=${userLon}&limit=1&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}`
-      );
-      const data = await response.json();
-      const userCity = data[0].name;
-      handleOnSubmit(userCity);
-      setUserLocation(userCity);
-      setInputValue(userCity);
-      setLoading(false);
-    } catch (err) {
-      setErr(true);
-    } finally {
-    }
-  }, [userLat, userLon]);
-
-  console.log("!@# err", err);
+const Home: NextPage = observer(() => {
+  const weatherStore = useStore(WeatherStore);
+  const {
+    currentWeather,
+    forecast,
+    isLoading,
+    fetchWeather,
+    fetchUserLocation,
+  } = weatherStore;
 
   // Get users location on mount
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-      setUserLat(position.coords.latitude);
-      setUserLon(position.coords.longitude);
-    });
-    getCityNameByCoords();
-    userLocation && setLoading(false);
-  }, [userLocation, getCityNameByCoords]);
+    navigator.geolocation.getCurrentPosition(
+      (position: GeolocationPosition) => {
+        fetchUserLocation(position);
+      }
+    );
+  }, []);
 
   return (
     <>
@@ -124,18 +46,25 @@ const Home: NextPage = () => {
           centerContent
           p={10}
           borderRadius={10}
-          bg="pink"
           textAlign="center"
+          minH="500px"
         >
-          <Search
-            onSearchChange={handleOnSearchChange}
-            onSubmit={handleOnSubmit}
-          />
-          {currentWeather && <CurrentWeather data={currentWeather} />}
+          <Search onSearchChange={fetchWeather} />
+          {isLoading ? (
+            <Spinner
+              thickness="4px"
+              speed="0.65s"
+              emptyColor="gray.200"
+              color="blue.500"
+              size="xl"
+            />
+          ) : (
+            currentWeather && <CurrentWeather data={currentWeather} />
+          )}
         </Container>
       </main>
     </>
   );
-};
+});
 
 export default Home;

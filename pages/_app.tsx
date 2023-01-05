@@ -1,6 +1,8 @@
 import "../styles/globals.css";
 import type { AppProps } from "next/app";
+import { useCreateStore, useProvider } from "mobx-store-provider";
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
+import { WeatherStore } from "../models/weather-store";
 
 const colors = {
   brand: {
@@ -13,9 +15,16 @@ const colors = {
 const theme = extendTheme({ colors });
 
 export default function App({ Component, pageProps }: AppProps) {
+  // Instantiate appStore inside the App component using useCreateStore
+  const weatherStore = useCreateStore(WeatherStore);
+  // Retrieve the Provider for the appStore
+  const Provider = useProvider(WeatherStore);
+
   return (
-    <ChakraProvider theme={theme}>
-      <Component {...pageProps} />
-    </ChakraProvider>
+    <Provider value={weatherStore}>
+      <ChakraProvider theme={theme}>
+        <Component {...pageProps} />
+      </ChakraProvider>
+    </Provider>
   );
 }
