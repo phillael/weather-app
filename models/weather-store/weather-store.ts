@@ -68,7 +68,7 @@ export const WeatherStore = types
       self.isLoading = true;
       try {
         const fetchLocation = yield fetch(
-          `http://api.openweathermap.org/geo/1.0/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&limit=1&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}`
+          `https://api.openweathermap.org/geo/1.0/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&limit=1&appid=${process.env.NEXT_PUBLIC_OPEN_WEATHER_API_KEY}`
         );
         Promise.all([fetchLocation]).then(async (response) => {
           const userLocationResponse = await response[0].json();
